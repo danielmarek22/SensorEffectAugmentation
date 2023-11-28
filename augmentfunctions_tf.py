@@ -278,7 +278,7 @@ def aug_exposure(image, delta_S, A, batchsize):
     # normalize image between 0 and 1
     hin = tf.add(tf.divide(image,255.0),0.0001)
     # project image into exposure space
-    S = tf.divide(tf.log(tf.subtract(tf.divide(255.0,hin),1.0)),-A)
+    S = tf.divide(np.log(tf.subtract(tf.divide(255.0,hin),1.0)),-A)
     # translate image in exposure space
     Sprime = tf.add(S,delta_S);
     # project augmented image back into original image space

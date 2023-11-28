@@ -1,7 +1,7 @@
 import os
 import scipy.misc
 import numpy as np
-from model import camGAN
+from model_aug import camGAN
 import tensorflow as tf
 import argparse
 
@@ -22,7 +22,7 @@ parser.add_argument('--colour_shift', type=bool, default=False, nargs='?', help=
 parser.add_argument('--save_params', type=bool, default=False, nargs='?', help='save augmentation parameters for each image')
 args = parser.parse_args()
 
-def main(_):
+def main():
   print(args)
   ##
   if args.image_width is None:
@@ -31,34 +31,33 @@ def main(_):
   if not os.path.exists(args.output):
     os.makedirs(args.output)
     ##
-  run_config = tf.ConfigProto()
+  # run_config = tf.ConfigProto()
   ## allocate only as much GPU memory based on runtime allocations
-  run_config.gpu_options.allow_growth=True
+  # run_config.gpu_options.allow_growth=True
   ##
-  with tf.Session(config=run_config) as sess:
-    autoauggan = camGAN(
-      sess,
-      image_width=args.image_width,
-      image_height=args.image_height,
-      batch_size=args.batch_size,
-      channels=args.channels,
-      input = args.input,
-      chromatic_aberration = args.chromatic_aberration,
-      blur = args.blur,
-      exposure = args.exposure,
-      noise = args.noise,
-      colour_shift = args.colour_shift,
-      save_params = args.save_params,
-      pattern=args.pattern,
-      output = args.output)
 
+  autoauggan = camGAN(
+    image_width=args.image_width,
+    image_height=args.image_height,
+    batch_size=args.batch_size,
+    channels=args.channels,
+    input = args.input,
+    chromatic_aberration = args.chromatic_aberration,
+    blur = args.blur,
+    exposure = args.exposure,
+    noise = args.noise,
+    colour_shift = args.colour_shift,
+    save_params = args.save_params,
+    pattern=args.pattern,
+    output = args.output)
+  autoauggan.augment_batches(args)
     #if args.is_train:
-    if True:
-      autoauggan.augment_batches(args)
-    else:
-      if not autoauggan.load(args.checkpoint_dir):
-        raise Exception("[!] Train a model first, then run test mode")
-      #wgan.test(args)
+    # if True:
+    #   autoauggan.augment_batches(args)
+    # else:
+    #   if not autoauggan.load(args.checkpoint_dir):
+    #     raise Exception("[!] Train a model first, then run test mode")
+    #   #wgan.test(args)
 
 if __name__ == '__main__':
-  tf.app.run()
+  main()

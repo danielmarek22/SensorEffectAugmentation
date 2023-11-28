@@ -37,7 +37,7 @@ from augmentfunctions_tf import *
 
 
 class camGAN(object):
-  def __init__(self, sess, image_height, image_width, batch_size, channels, 
+  def __init__(self, image_height, image_width, batch_size, channels, 
               input, colour_shift, chromatic_aberration, blur, exposure, noise, save_params,
               pattern, output):
     """
@@ -45,7 +45,6 @@ class camGAN(object):
       sess: TensorFlow session
       batch_size: The size of batch. Should be specified before training.
     """
-    self.sess = sess
     self.batch_size = batch_size
     self.output = output
     ## Dataset info
@@ -72,7 +71,8 @@ class camGAN(object):
     print('building model/graph')
     ## initialize graph input palceholders
     image_dims = [self.G_output_height, self.G_output_width, self.channels]
-    self.G_inputs = tf.placeholder(tf.float32, [self.batch_size] + image_dims, name='G_input_images')
+    self.G_inputs = np.zeros((self.batch_size,) + (self.G_output_height,) + (self.G_output_width,) + (self.channels,), dtype='float32')
+    print(self.G_inputs.shape)
     G_inputs = self.G_inputs
     #
     ## Camera generator graph ##
@@ -167,7 +167,8 @@ class camGAN(object):
     ## Exposure ##
     if exposure:
       # augment image with exposure
-      delta_S = tf.random_uniform((batchsize,1,1,1), minval=-0.6, maxval=1.2, dtype=tf.float32)
+      # delta_S = tf.random_uniform((batchsize,1,1,1), minval=-0.6, maxval=1.2, dtype=tf.float32)
+      delta_S = np.float32(np.random.uniform(low = 0.6, high=1.2, size=(batchsize,1,1,1)))
       A = 0.85
       A_S = tf.constant(A,shape=(batchsize,1,1,1),dtype=tf.float32)
       AugImg = aug_exposure(AugImg, delta_S, A_S, batchsize)
@@ -178,12 +179,12 @@ class camGAN(object):
     if noise:
       # augment image with sensor noise
       N=0.001
-      Ra_sd = tf.random_uniform((batchsize,1,1,1), minval=0.0, maxval=N, dtype=tf.float32)
-      Rb_si = tf.random_uniform((batchsize,1,1,1), minval=0.0, maxval=N, dtype=tf.float32)
-      Ga_sd = tf.random_uniform((batchsize,1,1,1), minval=0.0, maxval=N, dtype=tf.float32)
-      Gb_si = tf.random_uniform((batchsize,1,1,1), minval=0.0, maxval=N, dtype=tf.float32)
-      Ba_sd = tf.random_uniform((batchsize,1,1,1), minval=0.0, maxval=N, dtype=tf.float32)
-      Bb_si = tf.random_uniform((batchsize,1,1,1), minval=0.0, maxval=N, dtype=tf.float32)
+      Ra_sd = np.float32(np.random.uniform(low=0.0, high=N, size=(batchsize,1,1,1)))
+      Rb_si = np.float32(np.random.uniform(low=0.0, high=N, size=(batchsize,1,1,1)))
+      Ga_sd = np.float32(np.random.uniform(low=0.0, high=N, size=(batchsize,1,1,1)))
+      Gb_si = np.float32(np.random.uniform(low=0.0, high=N, size=(batchsize,1,1,1)))
+      Ba_sd = np.float32(np.random.uniform(low=0.0, high=N, size=(batchsize,1,1,1)))
+      Bb_si = np.float32(np.random.uniform(low=0.0, high=N, size=(batchsize,1,1,1)))
       AugImg = aug_noise(AugImg,batchsize,Ra_sd, Rb_si, Ga_sd,Gb_si, Ba_sd, Bb_si, crop_h, crop_w)
     else:
       Ra_sd = []
@@ -196,8 +197,8 @@ class camGAN(object):
     ## Color shift/Tone mapping ##
     if colour_shift:
       # augment image by shifting color temperature
-      a_transl = tf.random_uniform((batchsize,1,1,1),minval=-30.0, maxval=30.0,dtype=tf.float32)
-      b_transl = tf.random_uniform((batchsize,1,1,1),minval=-30.0, maxval=30.0,dtype=tf.float32)
+      a_transl = np.float32(np.random.uniform(low=-30.0, high=30.0, size=(batchsize,1,1,1)))
+      b_transl = np.float32(np.random.uniform(low=-30.0, high=30.0, size=(batchsize,1,1,1)))
       AugImg = aug_color(AugImg, a_transl, b_transl)
     else:
       a_transl = []
@@ -205,11 +206,11 @@ class camGAN(object):
 
     if save_params:
       ## Log the sampled augmentation parameters
-      ChromAbParams = [tf.squeeze(scale_val), tf.squeeze(tx_Rval), tf.squeeze(ty_Rval), tf.squeeze(tx_Gval), tf.squeeze(ty_Gval), tf.squeeze(tx_Bval), tf.squeeze(ty_Bval)]
-      BlurParams = [tf.squeeze(window_h), tf.squeeze(sigmas)]
-      ExpParams = tf.squeeze(delta_S)
-      NoiseParams = [tf.squeeze(Ra_sd), tf.squeeze(Rb_si), tf.squeeze(Ga_sd), tf.squeeze(Gb_si), tf.squeeze(Ba_sd), tf.squeeze(Bb_si)]
-      ColorParams = [tf.squeeze(a_transl), tf.squeeze(b_transl)]
+      ChromAbParams = [np.squeeze(scale_val), np.squeeze(tx_Rval), np.squeeze(ty_Rval), np.squeeze(tx_Gval), np.squeeze(ty_Gval), np.squeeze(tx_Bval), np.squeeze(ty_Bval)]
+      BlurParams = [np.squeeze(window_h), np.squeeze(sigmas)]
+      ExpParams = np.squeeze(delta_S)
+      NoiseParams = [np.squeeze(Ra_sd), np.squeeze(Rb_si), np.squeeze(Ga_sd), np.squeeze(Gb_si), np.squeeze(Ba_sd), np.squeeze(Bb_si)]
+      ColorParams = [np.squeeze(a_transl), np.squeeze(b_transl)]
       return AugImg, ChromAbParams, BlurParams, ExpParams, NoiseParams, ColorParams 
     else:
       return AugImg
