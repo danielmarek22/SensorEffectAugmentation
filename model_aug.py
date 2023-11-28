@@ -170,7 +170,7 @@ class camGAN(object):
       # delta_S = tf.random_uniform((batchsize,1,1,1), minval=-0.6, maxval=1.2, dtype=tf.float32)
       delta_S = np.float32(np.random.uniform(low = 0.6, high=1.2, size=(batchsize,1,1,1)))
       A = 0.85
-      A_S = tf.constant(A,shape=(batchsize,1,1,1),dtype=tf.float32)
+      A_S = np.full((batchsize,1,1,1), np.float32(A))
       AugImg = aug_exposure(AugImg, delta_S, A_S, batchsize)
     else:
       delta_S = []
