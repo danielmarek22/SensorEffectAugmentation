@@ -85,6 +85,7 @@ class camGAN(object):
     ##
     save_params = self.save_params
     # get file list of data/labels to augment, get batches
+    print(config.input)
     G_data = sorted([fn for fn in glob(os.path.join(config.input, config.pattern)) if 'aug' not in fn])
     N = len(G_data)
     batch_idxs = N // config.batch_size
@@ -135,15 +136,15 @@ class camGAN(object):
     # Chromatic Aberration ##
     if chromatic_aberration:
       # augment with chromatic aberration
-      scale_val = tf.random_uniform((batchsize,1,1,1), minval = 0.998, maxval = 1.002, dtype=tf.float32)
+      scale_val = np.random.uniform(low = 0.998, high = 1.002, size=(batchsize,1,1,1)).astype(float)
       minT = -0.002
       maxT = 0.002
-      tx_Rval = tf.random_uniform((batchsize,1,1,1), minval=minT, maxval = maxT, dtype=tf.float32)
-      ty_Rval = tf.random_uniform((batchsize,1,1,1), minval=minT, maxval = maxT, dtype=tf.float32)
-      tx_Gval = tf.random_uniform((batchsize,1,1,1), minval=minT, maxval = maxT, dtype=tf.float32)  
-      ty_Gval = tf.random_uniform((batchsize,1,1,1), minval=minT, maxval = maxT, dtype=tf.float32)
-      tx_Bval = tf.random_uniform((batchsize,1,1,1), minval=minT, maxval = maxT, dtype=tf.float32)  
-      ty_Bval = tf.random_uniform((batchsize,1,1,1), minval=minT, maxval = maxT, dtype=tf.float32)
+      tx_Rval = np.random.uniform( low=minT, high = maxT, size=(batchsize,1,1,1)).astype(float)
+      ty_Rval = np.random.uniform( low=minT, high = maxT, size=(batchsize,1,1,1)).astype(float)
+      tx_Gval = np.random.uniform( low=minT, high = maxT, size=(batchsize,1,1,1)).astype(float)
+      ty_Gval = np.random.uniform( low=minT, high = maxT, size=(batchsize,1,1,1)).astype(float)
+      tx_Bval = np.random.uniform( low=minT, high = maxT, size=(batchsize,1,1,1)).astype(float)
+      ty_Bval = np.random.uniform( low=minT, high = maxT, size=(batchsize,1,1,1)).astype(float)
       AugImg = aug_chromab(AugImg, crop_h, crop_w, scale_val, tx_Rval, ty_Rval, tx_Gval, ty_Gval, tx_Bval, ty_Bval)
     else:
       scale_val = []
@@ -157,8 +158,8 @@ class camGAN(object):
     ## Blur ##
     if blur:
       #augment the image with blur
-      window_h = tf.random_uniform((batchsize,1), minval=3.0, maxval=11.0,dtype=tf.float32)
-      sigmas = tf.random_uniform((batchsize,1), minval=0.0, maxval=3.0,dtype=tf.float32) # uniform from 0 to 1.5
+      window_h = np.random.uniform(low=3.0, high=11.0, size=(batchsize,1))
+      sigmas = tf.random_uniform(minval=0.0, maxval=3.0, size=(batchsize,1)) # uniform from 0 to 1.5
       AugImg = aug_blur(AugImg, window_h, sigmas, batchsize)
     else:
       window_h = []
@@ -168,7 +169,7 @@ class camGAN(object):
     if exposure:
       # augment image with exposure
       # delta_S = tf.random_uniform((batchsize,1,1,1), minval=-0.6, maxval=1.2, dtype=tf.float32)
-      delta_S = np.float32(np.random.uniform(low = 0.6, high=1.2, size=(batchsize,1,1,1)))
+      delta_S = np.random.uniform(low = 0.6, high=1.2, size=(batchsize,1,1,1)).astype(float)
       A = 0.85
       A_S = np.full((batchsize,1,1,1), np.float32(A))
       AugImg = aug_exposure(AugImg, delta_S, A_S, batchsize)
@@ -179,12 +180,12 @@ class camGAN(object):
     if noise:
       # augment image with sensor noise
       N=0.001
-      Ra_sd = np.float32(np.random.uniform(low=0.0, high=N, size=(batchsize,1,1,1)))
-      Rb_si = np.float32(np.random.uniform(low=0.0, high=N, size=(batchsize,1,1,1)))
-      Ga_sd = np.float32(np.random.uniform(low=0.0, high=N, size=(batchsize,1,1,1)))
-      Gb_si = np.float32(np.random.uniform(low=0.0, high=N, size=(batchsize,1,1,1)))
-      Ba_sd = np.float32(np.random.uniform(low=0.0, high=N, size=(batchsize,1,1,1)))
-      Bb_si = np.float32(np.random.uniform(low=0.0, high=N, size=(batchsize,1,1,1)))
+      Ra_sd = np.random.uniform(low=0.0, high=N, size=(batchsize,1,1,1)).astype(float)
+      Rb_si = np.random.uniform(low=0.0, high=N, size=(batchsize,1,1,1)).astype(float)
+      Ga_sd = np.random.uniform(low=0.0, high=N, size=(batchsize,1,1,1)).astype(float)
+      Gb_si = np.random.uniform(low=0.0, high=N, size=(batchsize,1,1,1)).astype(float)
+      Ba_sd = np.random.uniform(low=0.0, high=N, size=(batchsize,1,1,1)).astype(float)
+      Bb_si = np.random.uniform(low=0.0, high=N, size=(batchsize,1,1,1)).astype(float)
       AugImg = aug_noise(AugImg,batchsize,Ra_sd, Rb_si, Ga_sd,Gb_si, Ba_sd, Bb_si, crop_h, crop_w)
     else:
       Ra_sd = []
@@ -197,8 +198,8 @@ class camGAN(object):
     ## Color shift/Tone mapping ##
     if colour_shift:
       # augment image by shifting color temperature
-      a_transl = np.float32(np.random.uniform(low=-30.0, high=30.0, size=(batchsize,1,1,1)))
-      b_transl = np.float32(np.random.uniform(low=-30.0, high=30.0, size=(batchsize,1,1,1)))
+      a_transl = np.random.uniform(low=-30.0, high=30.0, size=(batchsize,1,1,1)).astype(float)
+      b_transl = np.random.uniform(low=-30.0, high=30.0, size=(batchsize,1,1,1)).astype(float)
       AugImg = aug_color(AugImg, a_transl, b_transl)
     else:
       a_transl = []

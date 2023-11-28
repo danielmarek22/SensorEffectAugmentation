@@ -135,12 +135,12 @@ def aug_noise(image_rgb, batchsize, Ra_sd, Rb_si, Ga_sd, Gb_si, Ba_sd, Bb_si, im
     # define cfa interpolation kernels
     RandB_interp = 0.25*np.array([[1,2,1],[2,4,2],[1,2,1]])
     G_interp = 0.25*np.array([[0,1,0],[1,4,1],[0,1,0]])
-    Rcfa_kernel = tf.constant(RandB_interp, dtype=tf.float32, shape = (3,3,1,1))
-    Gcfa_kernel = tf.constant(G_interp, dtype=tf.float32, shape = (3,3,1,1))
-    Bcfa_kernel = tf.constant(RandB_interp, dtype=tf.float32, shape = (3,3,1,1))
+    Rcfa_kernel = RandB_interp[:, :, np.newaxis, np.newaxis]
+    Gcfa_kernel = G_interp[:, :, np.newaxis, np.newaxis]
+    Bcfa_kernel = RandB_interp[:, :, np.newaxis, np.newaxis]
     #
     # normalize images
-    image_rgb_ = tf.image.convert_image_dtype(image_rgb/255.0, tf.float32)
+    image_rgb_ = (np.asarray(image_rgb)/255.0).astype(float)
     #
     ## model photosite bleeding in image ##
     #image_prgb = tf.squeeze(tf.tensordot(image_rgb_, photobleed, axes=[[3],[2]]))
@@ -172,26 +172,23 @@ def add_channel_noise(chan, a_sd, b_si, batchsize, im_h, im_w):
     ##
     ## determine sensor noise at each pixel using non-clipped poisson-gauss model from FOI et al 
     ##
-    if a_sd==0.0:
-        chi=0
-        sigdep = chan
-    else:
-        chi = 1.0/a_sd
-        rate = tf.maximum(chi*chan,0)
-        sigdep = tf.random_poisson(rate, shape=[])/chi
-        #
-    sigindep = tf.sqrt(b_si)*tf.random_normal(shape=(batchsize, im_h, im_w, 1), mean=0.0, stddev=1.0)
+    # if a_sd==0.0:
+    #     chi=0
+    #     sigdep = chan
+    # else:
+    #     chi = 1.0/a_sd
+    #     rate = tf.maximum(chi*chan,0)
+    #     sigdep = tf.random_poisson(rate, shape=[])/chi
+    #     #
+    chi = 1.0/a_sd
+    rate = np.maximum(chi*chan,0)
+    sigdep = np.random.poisson(rate) / chi
+    sigindep = np.sqrt(b_si) * np.random.normal(size=(batchsize, im_h, im_w, 1), loc=0.0, scale=1.0)
     # sum the two noise sources
     chan_noise = sigdep + sigindep
-    #
-    #sigdep = tf.sqrt(a_sd*chan)*tf.random_normal(shape=(batchsize,im_h, im_w, 1), mean=0.0, stddev=1.0)
-    #sigindep = tf.sqrt(b_si)*tf.random_normal(shape=(batchsize,im_h, im_w, 1), mean=0.0, stddev=1.0)
-    #chan_noise = chan + sigdep + sigindep
-    #
-    #chan_noise = chan + tf.sqrt(a_sd*chan + b_si)*tf.random_normal(shape=(batchsize,im_h, im_w, 1), mean=0.0, stddev=1.0)
-    #
+
     # clip the noise between 0 and 1 (baking in 0 and 255 limits)
-    clip_chan_noise = tf.clip_by_value(chan_noise, 0.0, 1.0)
+    clip_chan_noise = np.clip(chan_noise, 0.0, 1.0)
     #
     return clip_chan_noise
 
