@@ -2,12 +2,12 @@ import os
 import scipy.misc
 import numpy as np
 from model_aug import camGAN
-import tensorflow as tf
+# import tensorflow as tf
 import argparse
 
 parser = argparse.ArgumentParser(description='Augment a dataset')
 parser.add_argument('-n', type=int, default=1, nargs='?', help='sets the number of augmentations to perform on the dataset i.e., setting n to 2 means the dataset will be augmented twice')
-parser.add_argument('-b', '--batch_size', type=int, default=64, nargs='?', help='size of batches; must be a multiple of n and >1')
+parser.add_argument('-b', '--batch_size', type=int, default=10, nargs='?', help='size of batches; must be a multiple of n and >1')
 parser.add_argument('-c', '--channels', type=int, default=3, nargs='?', help='dimension of image color channel (note that any channel >3 will be discarded')
 parser.add_argument('-i', '--input', type=str, help='path to the dataset to augment')
 parser.add_argument('-o', '--output', type=str, default='results', nargs='?', help='path where the augmented dataset will be saved')

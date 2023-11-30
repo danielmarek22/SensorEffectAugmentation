@@ -11,7 +11,7 @@ import pdb
 import math
 import numpy as np
 import time
-import tensorflow as tf
+# import tensorflow as tf
 from six.moves import xrange
 #
 import cv2
@@ -101,10 +101,10 @@ class camGAN(object):
         G_batch_images, G_batch_files = self.load_data_batches(G_data, config.batch_size, randombatch, idx)
         #
         ## Augment data by sampling from a random dist. and pushing images through the generator
-        out = self.sess.run([self.aug_image_genOP], feed_dict={self.G_inputs: G_batch_images})
+        out = self.generate_augmentation(G_batch_images)
         #
         ## generator output images and sampled augmentation parameters
-        G_output_images = np.squeeze(out[0])
+        G_output_images = np.squeeze(out)
         ChromAbParams = np.array(out[0][1])
         BlurParams =   np.array(out[0][2])
         ExpParams =   np.array(out[0][3])
@@ -220,13 +220,15 @@ class camGAN(object):
   ## ---- utility functions) ---- ##
   ## ---------------------------- ##
   def read_img(self, filename):
-    imgtmp = scipy.misc.imread(filename)
+    imgtmp = cv2.imread(filename)
+    imgtmp = cv2.cvtColor(imgtmp, cv2.COLOR_BGR2RGB)
     ds = imgtmp.shape
+
     ## remove any depth channel
     if ds[2]>self.channels:
       imgtmp = np.squeeze(imgtmp[:,:,:self.channels])
     ## resize image to specified height and width
-    img = scipy.misc.imresize(imgtmp,(self.G_output_height,self.G_output_width,3))
+    img = cv2.resize(imgtmp, (self.G_output_width, self.G_output_height))
     img = np.array(img).astype(np.float32)
     return img
 
@@ -272,10 +274,11 @@ class camGAN(object):
         #out_name = os.path.join(self.output, imID+'_aug.png')
         try:
             ## save the image
-            image_save = np.squeeze(image_out)
+            # image_save = np.squeeze(image_out)
+            image_save = image_out
             ## clip and save the augmented image
-            image_save[image_save > 255.0] = 255.0
-            image_save[image_save < 0.0] = 0.0
+            # image_save[image_save > 255.0] = 255.0
+            # image_save[image_save < 0.0] = 0.0
             image_save = Image.fromarray((image_save).astype(np.uint8))
             print("saved %s to results directory"%(out_name))
             image_save.save(out_name)

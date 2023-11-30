@@ -146,7 +146,7 @@ def aug_noise(image_rgb, batchsize, Ra_sd, Rb_si, Ga_sd, Gb_si, Ba_sd, Bb_si, im
     #image_prgb = tf.squeeze(tf.tensordot(image_rgb_, photobleed, axes=[[3],[2]]))
     #
     # split the image into its channels
-    Rchan,Gchan,Bchan = tf.split(image_rgb_, 3, axis=3)
+    Rchan,Gchan,Bchan = np.split(image_rgb_, 3, axis=3)
     #
     ## add in realistic sensor noise to each channel ##
     Rchan_ = add_channel_noise(Rchan, Ra_sd, Rb_si, batchsize, im_h, im_w)
@@ -159,9 +159,9 @@ def aug_noise(image_rgb, batchsize, Ra_sd, Rb_si, Ga_sd, Gb_si, Ba_sd, Bb_si, im
     Bchan__ = bilinear_interp_cfa(Bchan_, Bcfa, Bcfa_kernel, batchsize, im_h, im_w)
     #
     # compose the noisy image:
-    augnoise = tf.concat([Rchan__,Gchan__,Bchan__],axis=3) 
+    augnoise = np.stack([Rchan__,Gchan__,Bchan__],axis=3) 
     # scale image to 0-255
-    augnoise = tf.multiply(augnoise, 255.0)
+    augnoise = np.multiply(augnoise, 255.0)
     #
     augimg = augnoise
     #pdb.set_trace()
