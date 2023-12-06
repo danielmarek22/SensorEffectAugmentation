@@ -254,9 +254,9 @@ def return_bayer(bayer_type, im_h, im_w, batchsize):
     Gcfa= np.tile( Gcfa, (batchsize,1,1))
     Bcfa= np.tile( Bcfa, (batchsize,1,1))
     #
-    Rcfa = tf.constant(Rcfa, dtype=tf.int32, shape = (batchsize,im_h,im_w,1))
-    Gcfa = tf.constant(Gcfa, dtype=tf.int32, shape = (batchsize,im_h,im_w,1))
-    Bcfa = tf.constant(Bcfa, dtype=tf.int32, shape = (batchsize,im_h,im_w,1))
+    Rcfa = np.array(Rcfa, dtype=np.int32).reshape((batchsize, im_h, im_w, 1))
+    Gcfa = np.array(Gcfa, dtype=np.int32).reshape((batchsize, im_h, im_w, 1))
+    Bcfa = np.array(Bcfa, dtype=np.int32).reshape((batchsize, im_h, im_w, 1))
     #
     return Rcfa, Gcfa, Bcfa 
 
@@ -264,28 +264,32 @@ def return_bayer(bayer_type, im_h, im_w, batchsize):
 # Exposure augmentation functions
 # ---------------------------------------------------------------- ##
 def aug_exposure(image, delta_S, A, batchsize):
-    #
-    # Exposure
-    #
-    ## contrast variable
-    #A = 0.85
-    ## calculate the exposure change
-    ##delta_S = tf.constant(delta_S, shape = (batchsize,1,1,1),dtype = tf.float32)
-    #
-    # normalize image between 0 and 1
-    hin = tf.add(tf.divide(image,255.0),0.0001)
-    # project image into exposure space
-    S = tf.divide(np.log(tf.subtract(tf.divide(255.0,hin),1.0)),-A)
-    # translate image in exposure space
-    Sprime = tf.add(S,delta_S);
-    # project augmented image back into original image space
-    Iprime = tf.divide(255.0,tf.add(1.0,tf.exp(tf.multiply(-A,Sprime))))
-    # clip
-    Iprime = tf.clip_by_value(Iprime,0.0,1.0)
-    # scale augmented image to 0->255 range
-    hout = tf.multiply(Iprime,255.0)
-    #
+    # Ensure that image values are in the valid range [0, 255]
+    image_batch = np.clip(image, 0, 255)
+
+    # Normalize images between 0 and 1
+    hin = image_batch / 255.0
+
+    # Ensure values are in a valid range for the logarithm
+    hin = np.clip(hin, 1e-10, 1.0 - 1e-10)
+    # Project images into exposure space
+    S = ((1.0 / hin) - 1.0)
+    S = np.log(S) / -A
+
+    # Translate images in exposure space
+    Sprime = S + delta_S
+
+    # Project augmented images back into the original image space
+    Iprime = 255.0 / (1.0 + np.exp(-A * Sprime))
+
+    # Clip values
+    Iprime = np.clip(Iprime, 0.0, 255.0)
+
+    # Scale augmented images to the 0->255 range
+    hout = Iprime.astype(np.uint8)
+
     return hout
+
 
 def aug_exposure_simple(image, delta_S, Amin, Amax, batchsize):
     #
