@@ -17,63 +17,53 @@ import pdb
 # lens distortion augmentation functions
 # ---------------------------------------------------------------- #
 def aug_chromab(image, crop_h, crop_w, scale_val, tx_Rval, ty_Rval, tx_Gval, ty_Gval, tx_Bval, ty_Bval):
-    #def aug_chromab(image, wlRarr, wlGarr, wlBarr, sigRarr, sigGarr, sigBarr, batchsize):
-    #
-    # adjust either longitudinal or lateral chromatic aberration
-    # "longtudinal": shift in the direction of the optical axis (scale channels or blur)
-    #     - set the value of either scale_x or scale_y set on the order of 0.005
-    # "lateral": shift perpendicular to the optical axis, in the plane of the sensor or film (shift color channels) 
-    #     - set the value of either tx or ty set on the order of 0.005
-    #
-    # longitudinal chromatic aberration: scale the green channel
-    # lateral chromatic aberration: translate the channels
-    #
-
     # normalize image to 0-1 range, convert to float
-    image_ = tf.image.convert_image_dtype(image/255.0, tf.float32)
+    image_ = np.array(image) / 255.0
+
     # split the image into its channels
-    R,G,B = tf.split(image_, 3, axis=3)
-    #
-    ## METHOD: IMAGE CHANNEL WARPING
-    ## the below code generates a specific Hi for each channel
-    ## red channel parameters
-    R_alpha1 = tf.ones_like(tx_Rval)     #scale_r*math.cos(theta_r) # sx*r1
-    R_alpha2 = tf.zeros_like(tx_Rval)     #-shear_r*math.sin(theta_r)# Sx*r2
-    R_alpha3 = tx_Rval #tx
-    R_alpha4 = tf.zeros_like(tx_Rval)    #shear_r*math.sin(theta_r) #sy*r4
-    R_alpha5 = tf.ones_like(tx_Rval)    #scale_r*math.cos(theta_r) # Sy*r3  
-    R_alpha6 = ty_Rval #ty
+    R, G, B = np.split(image_, 3, axis=3)
+
+    # red channel parameters
+    R_alpha1 = np.ones_like(tx_Rval)
+    R_alpha2 = np.zeros_like(tx_Rval)
+    R_alpha3 = tx_Rval
+    R_alpha4 = np.zeros_like(tx_Rval)
+    R_alpha5 = np.ones_like(tx_Rval)
+    R_alpha6 = ty_Rval
+
     # green channel parameters
-    G_alpha1 = scale_val  #scale_g*math.cos(theta_g) # sx*r1
-    G_alpha2 = tf.zeros_like(tx_Gval)        #-shear_g*math.sin(theta_g)# Sx*r2
-    G_alpha3 = tx_Gval    #tx 
-    G_alpha4 = tf.zeros_like(tx_Rval)        #shear_g*math.sin(theta_g) # sy*r4
-    G_alpha5 = scale_val  #scale_g*math.cos(theta_g) # Sy*r3
-    G_alpha6 = ty_Gval    #ty
+    G_alpha1 = scale_val
+    G_alpha2 = np.zeros_like(tx_Gval)
+    G_alpha3 = tx_Gval
+    G_alpha4 = np.zeros_like(tx_Rval)
+    G_alpha5 = scale_val
+    G_alpha6 = ty_Gval
+
     # blue channel parameters
-    B_alpha1 = tf.ones_like(tx_Rval)     #scale_b*math.cos(theta_b) # sx*r1
-    B_alpha2 = tf.zeros_like(tx_Bval)    #-shear_b*math.sin(theta_b)# Sx*r2
-    B_alpha3 = tx_Bval                   #tx  
-    B_alpha4 = tf.zeros_like(tx_Bval)    #shear_b*math.sin(theta_b) # sy*r4
-    B_alpha5 = tf.ones_like(tx_Rval)     #scale_b*math.cos(theta_b) # Sy*r3 
-    B_alpha6 = tx_Bval # ty
-    ##
+    B_alpha1 = np.ones_like(tx_Rval)
+    B_alpha2 = np.zeros_like(tx_Bval)
+    B_alpha3 = tx_Bval
+    B_alpha4 = np.zeros_like(tx_Bval)
+    B_alpha5 = np.ones_like(tx_Rval)
+    B_alpha6 = ty_Bval
+
     num_aff_params = 6
-    HRt = tf.stack([R_alpha1, R_alpha2, R_alpha3, R_alpha4, R_alpha5, R_alpha6], axis = 1)
-    HGt = tf.stack([G_alpha1, G_alpha2, G_alpha3, G_alpha4, G_alpha5, G_alpha6], axis = 1)
-    HBt = tf.stack([B_alpha1, B_alpha2, B_alpha3, B_alpha4, B_alpha5, B_alpha6], axis = 1)
-    #
-    # use the  spatial transformer layer to perform the affine warping on each channel for each image in the image batch
+    HRt = np.stack([R_alpha1, R_alpha2, R_alpha3, R_alpha4, R_alpha5, R_alpha6], axis=1)
+    HGt = np.stack([G_alpha1, G_alpha2, G_alpha3, G_alpha4, G_alpha5, G_alpha6], axis=1)
+    HBt = np.stack([B_alpha1, B_alpha2, B_alpha3, B_alpha4, B_alpha5, B_alpha6], axis=1)
+
+    # Assuming the affine transformation function is defined elsewhere in the code
     augR = perform_aff_transformation(R, HRt, (crop_h, crop_w))
     augG = perform_aff_transformation(G, HGt, (crop_h, crop_w))
     augB = perform_aff_transformation(B, HBt, (crop_h, crop_w))
-    #
-    augimage = tf.concat([augR,augG,augB], axis =3)
-    #
+
+    augimage = np.concatenate([augR, augG, augB], axis=3)
+
     # clip
-    augimage = tf.clip_by_value(augimage,0.0,1.0)
+    augimage = np.clip(augimage, 0.0, 1.0)
     # scale image back into 0-255 range
-    augimage = tf.multiply(augimage,255.0)
+    augimage = np.multiply(augimage, 255.0).astype(np.uint8)
+    
     # return augmented image
     return augimage
 
