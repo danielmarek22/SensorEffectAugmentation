@@ -70,36 +70,28 @@ def aug_chromab(image, crop_h, crop_w, scale_val, tx_Rval, ty_Rval, tx_Gval, ty_
 # ---------------------------------------------------------------- #
 # color temperature/color balance augmentation functions
 # ---------------------------------------------------------------- ##
-
 def aug_color(image_rgb, a_transl, b_transl):
-    #
     # Convert image to CIE L*a*b* color space
-    # https://github.com/affinelayer/pix2pix-tensorflow/blob/master/pix2pix.py
-    #
-    # a_transl = tf.expand_dims(tf.constant(a_transl,dtype=tf.float32), axis = 2)
-    # b_transl = tf.expand_dims(tf.constant(b_transl,dtype=tf.float32), axis = 2)
-    #
-    # normalize the image between 0 and 1, convert to float
-    image_ = tf.image.convert_image_dtype(image_rgb/255.0, tf.float32)
-    #
-    # convert image to LAB color space
+    image_ = np.array(image_rgb) / 255.0
     image_lab = rgb_to_lab(image_)
-    #
-    # split into the 3 lab channels
-    Lchan, achan, bchan = tf.split(image_lab, 3, axis= 3)
-    #
-    # apply transformations in the a and b axes
-    aug_a = achan+a_transl
-    aug_b = bchan+b_transl
-    #
-    # convert back to rgb colorspace
-    auglab_ = tf.squeeze(tf.stack([Lchan, aug_a, aug_b], axis=3))
-    #auglab_ = image_lab
+    print(image_lab.shape)
+    
+    # Split into the 3 lab channels
+    Lchan, achan, bchan = np.split(image_lab, 3, axis=3)
+    
+    # Apply transformations in the a and b axes
+    aug_a = achan + a_transl
+    aug_b = bchan + b_transl
+    
+    # Convert back to RGB colorspace
+    auglab_ = np.squeeze(np.stack([Lchan, aug_a, aug_b], axis=3))
+    print(auglab_.shape)
     augim_rgb = lab_to_rgb(auglab_)
-    #
-    #scale back to 0-255 range
-    augimage = tf.multiply(augim_rgb, 255.0)
-    #
+    print(augim_rgb.shape)
+    
+    # Scale back to 0-255 range
+    augimage = augim_rgb * 255.0
+    
     return augimage
 
 ### ---------------------------------------------------------------- ###
