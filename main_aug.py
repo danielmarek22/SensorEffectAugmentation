@@ -2,7 +2,7 @@ import os
 import scipy.misc
 import numpy as np
 from model_aug import camGAN
-# import tensorflow as tf
+
 import argparse
 
 parser = argparse.ArgumentParser(description='Augment a dataset')

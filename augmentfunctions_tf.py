@@ -2,7 +2,6 @@
 ## code for debugging augment layers
 ##
 #from __future__ import division
-import tensorflow as tf
 import numpy as np
 import cv2
 import os

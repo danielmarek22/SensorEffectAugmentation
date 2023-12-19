@@ -1,32 +1,13 @@
 #from __future__ import absolute_import
 from __future__ import division
 #from __future__ import print_function
-import tensorflow as tf
 import numpy as np
-#import argparse
-#import os
-#import json
-#import glob
-#import random
-#import collections
-#import math
+
 #
 # Code from:
 # https://github.com/affinelayer/pix2pix-tensorflow/blob/master/pix2pix.py
 #
 
-def check_image(image):
-	assertion = tf.assert_equal(tf.shape(image)[-1], 3, message="image must have 3 color channels")
-	with tf.control_dependencies([assertion]):
-		image = tf.identity(image)
-
-	if image.get_shape().ndims not in (3, 4):
-		raise ValueError("image must be either 3 or 4 dimensions")
-	# make the last dimension 3 so that you can unstack the colors
-	shape = list(image.get_shape())
-	shape[-1] = 3
-	image.set_shape(shape)
-	return image
 
 # based on https://github.com/torch/image/blob/9f65c30167b2048ecbe8b7befdc6b2d6d12baee9/generic/image.c	
 def rgb_to_lab(srgb):
