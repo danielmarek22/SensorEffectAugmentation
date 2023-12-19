@@ -4,6 +4,7 @@
 #from __future__ import division
 import tensorflow as tf
 import numpy as np
+import cv2
 import os
 import random
 import math
@@ -85,9 +86,7 @@ def aug_color(image_rgb, a_transl, b_transl):
     
     # Convert back to RGB colorspace
     auglab_ = np.squeeze(np.stack([Lchan, aug_a, aug_b], axis=3))
-    print(auglab_.shape)
     augim_rgb = lab_to_rgb(auglab_)
-    print(augim_rgb.shape)
     
     # Scale back to 0-255 range
     augimage = augim_rgb * 255.0
@@ -272,72 +271,39 @@ def aug_exposure(image, delta_S, A, batchsize):
 
     return hout
 
-
-def aug_exposure_simple(image, delta_S, Amin, Amax, batchsize):
-    #
-    # scaling and shifting the luminance channel
-    #
-    # normalize the image between 0 and 1, convert to float
-    image_ = tf.image.convert_image_dtype(image_rgb/255.0, tf.float32)
-    # convert image to LAB color space
-    image_lab = rgb_to_lab(image_)
-    # split into the 3 lab channels
-    Lchan, achan, bchan = tf.split(image_lab, 3, axis= 3)
-    #
-    # shift the L channel
-    Laug = Lchan + delta_S
-    #
-    # scale the L channel
-    Laugnorm = (Laug - tf.reduce_min(Laug,axis = [1,2,3]))/(tf.reduce_max(Laug,axis = [1,2,3])-tf.reduce_min(Laug,axis = [1,2,3]))
-    Laug2 = Amax*Laugnorm + Amin
-    # convert back to rgb colorspace
-    auglab_ = tf.squeeze(tf.stack([Laug, aug_a, aug_b], axis=3))
-    auglab_ = tf.clip_by_value(auglab_,0.0,1.0)
-    augim_rgb = lab_to_rgb(auglab_)
-    #scale back to 0-255 range
-    augimage = tf.multiply(augim_rgb, 255.0)
-    #
-    return augimage
-
 # ---------------------------------------------------------------- #
 # Blur augmentation functions
 # ---------------------------------------------------------------- ##
-#
 def aug_blur(img_inp, window_l, sig_arr, batchsize):
-    #
-    # Blur
-    # Iprime = cv2.GaussianBlur(image,(hsize,hsize),sigma)
-    #
+    # Normalize image to 0-1 range and convert to float
+    image_norm = np.array(img_inp) / 255.0
+    batch_list = np.split(image_norm, batchsize, axis=0)
+    conv_batch_list = []
 
-    # normalize image to 0-1 range and convert to float
-    image_norm = tf.image.convert_image_dtype(img_inp/255.0, tf.float32)
-    # get batches
-    batch_list = tf.split(image_norm,batchsize, axis=0)
-    batch_counter=0
-    conv_batch_list=[]
-    for bimg in batch_list:
-        # split channels
-        Rchan,Gchan,Bchan = tf.split(bimg, 3, axis= 3)
-        # get the window and sigma
-        wl = tf.squeeze(window_l[batch_counter])
-        sig = tf.squeeze(sig_arr[batch_counter])
-        # get the kernel - [fh,fw,chan_in, chan_out]
+    for batch_counter, bimg in enumerate(batch_list):
+        # Split channels
+        Rchan, Gchan, Bchan = np.split(bimg, 3, axis=3)
+        # Get the window and sigma
+        wl = np.squeeze(window_l[batch_counter])
+        sig = np.squeeze(sig_arr[batch_counter])
+        # Get the kernel
         fgauss = gaussiankern2D(wl, sig)
-        # conv
-        R_conv = tf.nn.conv2d(Rchan, fgauss, strides=[ 1, 1, 1, 1], padding='SAME')
-        G_conv = tf.nn.conv2d(Gchan, fgauss, strides=[ 1, 1, 1, 1], padding='SAME')
-        B_conv = tf.nn.conv2d(Bchan, fgauss, strides=[ 1, 1, 1, 1], padding='SAME')
-        bimg_conv= tf.stack([R_conv, G_conv, B_conv], axis=3)
-        conv_batch_list.append(tf.squeeze(bimg_conv))
-        batch_counter+=1
-        #
-    img_conv= tf.stack(conv_batch_list,0)
-    augimage = tf.squeeze(img_conv)
-    # clip
-    augimage = tf.clip_by_value(augimage,0.0,1.0)
-    # scale image back into 0-255 range
-    augimage = tf.multiply(augimage,255.0)
-    # return augmented image
+        fgauss = np.squeeze(fgauss)
+        # Convolution
+        R_conv = cv2.filter2D(np.squeeze(Rchan), -1, fgauss.astype(np.float32))
+        G_conv = cv2.filter2D(np.squeeze(Gchan), -1, fgauss.astype(np.float32))
+        B_conv = cv2.filter2D(np.squeeze(Bchan), -1, fgauss.astype(np.float32))
+        bimg_conv = np.stack([R_conv, G_conv, B_conv], axis=2)
+        conv_batch_list.append(np.squeeze(bimg_conv))
+
+    img_conv = np.stack(conv_batch_list, 0)
+    augimage = np.squeeze(img_conv)
+
+    # Clip
+    augimage = np.clip(augimage, 0.0, 1.0)
+    # Scale image back into 0-255 range
+    augimage = np.multiply(augimage, 255.0)
+    # Return augmented image
     return augimage
 
 def disckern2D(disc_radius,wl):
@@ -353,18 +319,26 @@ def boxkern2D(wl):
     boxkern = (1/wl**2)*tf.ones((wl,wl))
     return tf.expand_dims(tf.expand_dims(boxkern, axis = 2), axis = 3)
 
+# def gaussiankern2D(wl, sig):
+#     """
+#     creates gaussian kernel with side length window_length and a sigma of sigma
+#     """
+#     # [filter_height, filter_width, in_channels, out_channels]
+#     # initialize filter
+#     wx = tf.range(-wl/2 + 1., wl/2 + 1.) #np.arange(-wl // 2 + 1., wl // 2 + 1.)
+#     xx, yy = tf.meshgrid(wx, wx)#np.meshgrid(wx, wx)
+#     tkernel = tf.exp(-(xx**2 + yy**2) / (2. * sig**2))#np.exp(-(xx**2 + yy**2) / (2. * sig**2))
+#     tkernel_ = tkernel / tf.reduce_sum(tkernel)#tkernel / np.sum(tkernel)
+#     expkernel_ = tf.expand_dims(tf.expand_dims(tkernel_,axis=2), axis =3)
+#     #
+#     return expkernel_
+
 def gaussiankern2D(wl, sig):
-    """
-    creates gaussian kernel with side length window_length and a sigma of sigma
-    """
-    # [filter_height, filter_width, in_channels, out_channels]
-    # initialize filter
-    wx = tf.range(-wl/2 + 1., wl/2 + 1.) #np.arange(-wl // 2 + 1., wl // 2 + 1.)
-    xx, yy = tf.meshgrid(wx, wx)#np.meshgrid(wx, wx)
-    tkernel = tf.exp(-(xx**2 + yy**2) / (2. * sig**2))#np.exp(-(xx**2 + yy**2) / (2. * sig**2))
-    tkernel_ = tkernel / tf.reduce_sum(tkernel)#tkernel / np.sum(tkernel)
-    expkernel_ = tf.expand_dims(tf.expand_dims(tkernel_,axis=2), axis =3)
-    #
+    wx = np.arange(-wl // 2 + 1., wl // 2 + 1.)
+    xx, yy = np.meshgrid(wx, wx)
+    tkernel = np.exp(-(xx**2 + yy**2) / (2. * sig**2))
+    tkernel_ = tkernel / np.sum(tkernel)
+    expkernel_ = np.expand_dims(np.expand_dims(tkernel_, axis=2), axis=3)
     return expkernel_
 
 ### ---------------------------------------------------------------------------------------------------------------------------

@@ -159,7 +159,7 @@ class camGAN(object):
     if blur:
       #augment the image with blur
       window_h = np.random.uniform(low=3.0, high=11.0, size=(batchsize,1))
-      sigmas = tf.random_uniform(minval=0.0, maxval=3.0, size=(batchsize,1)) # uniform from 0 to 1.5
+      sigmas = np.random.uniform(low=0.0, high=3.0, size=(batchsize,1)) # uniform from 0 to 1.5
       AugImg = aug_blur(AugImg, window_h, sigmas, batchsize)
     else:
       window_h = []
