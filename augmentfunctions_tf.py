@@ -306,33 +306,6 @@ def aug_blur(img_inp, window_l, sig_arr, batchsize):
     # Return augmented image
     return augimage
 
-def disckern2D(disc_radius,wl):
-    # generate a disc kernel with radius disc_radius
-    disc_kernel = tf.ones((2*wl, 2*wl, 1, 1))
-    x, y = tf.meshgrid(2*disc_radius, 2*disc_radius)
-    #determine where to make the elements zero
-    disc_kernel[x*x + y*y >= r*r] = 0
-    return disc_kernel_
-
-
-def boxkern2D(wl):
-    boxkern = (1/wl**2)*tf.ones((wl,wl))
-    return tf.expand_dims(tf.expand_dims(boxkern, axis = 2), axis = 3)
-
-# def gaussiankern2D(wl, sig):
-#     """
-#     creates gaussian kernel with side length window_length and a sigma of sigma
-#     """
-#     # [filter_height, filter_width, in_channels, out_channels]
-#     # initialize filter
-#     wx = tf.range(-wl/2 + 1., wl/2 + 1.) #np.arange(-wl // 2 + 1., wl // 2 + 1.)
-#     xx, yy = tf.meshgrid(wx, wx)#np.meshgrid(wx, wx)
-#     tkernel = tf.exp(-(xx**2 + yy**2) / (2. * sig**2))#np.exp(-(xx**2 + yy**2) / (2. * sig**2))
-#     tkernel_ = tkernel / tf.reduce_sum(tkernel)#tkernel / np.sum(tkernel)
-#     expkernel_ = tf.expand_dims(tf.expand_dims(tkernel_,axis=2), axis =3)
-#     #
-#     return expkernel_
-
 def gaussiankern2D(wl, sig):
     wx = np.arange(-wl // 2 + 1., wl // 2 + 1.)
     xx, yy = np.meshgrid(wx, wx)
