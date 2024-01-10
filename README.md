@@ -1,45 +1,27 @@
 ##
 ## SENSOR EFFECT AUGMENTATION PIPELINE 
 
-This repository contains the tensorflow implementation of the Sensor Effect Augmentation Pipeline described in *Modeling Camera Effects to Improve Visual Learning from Synthetic Data* (https://arxiv.org/abs/1803.07721).
+This repository contains the tensorflow implementation of the Sensor Effect Augmentation Pipeline described in *Modeling Camera Effects to Improve Visual Learning from Synthetic Data* (https://arxiv.org/abs/1803.07721). This fork uses NumPy insted of obsolete TensorFlow.
 
 ### Setting up the Sensor Effect Pipeline
-This pipeline uses docker/containers, so it can be run on any computer. 
-For a good tutorial on docker see https://docs.docker.com/get-started/.
-The docker image used by this model needs to be built before being used, which is done by running the following 
-command in the Sensor_Augmentation_Pipeline folder:
-
-```$docker build -t tf-sensor-augment augment-docker-image/```
-
-where ```tf-sensor-augment``` is the tag for the docker image and is what is used to start a container.
-The docker image is specified in ```augment-docker-image/Dockerfile```.
+The pipeline of this repository was changed to use virtual env insted of docker, as it can simply run without gpu with proper libraries installed.
+Simply create a new venv with ``` python -m venv sensorEnv ```, then install libraries listed in ``` requirements.txt ``` with ``` pip install -r requirements.txt ```.
 
 
 ### Running the Pipeline/Augmenting Images
 
 To run the pipeline, use the command
 
-```$. run_main_aug.sh```
+```python main_aug.py ```
 
 in the command line within the SensorEffectAugmentation folder.
-You can customize the type of augmentations, the dataset to augmented, etc by modifying the ```run_main_aug.sh```, which is described in more detail below.
+You can customize the type of augmentations, the dataset to augmented, etc by modifying the ``` main_aug.sh```, which is described in more detail below.
 
 The Sensor Effect Image Augmentation Pipeline is comprised of the following files:
 
-* ```run_main_aug.sh```
-
-   This is a bash file that initializes a docker container and runs the image augmentation pipeline.
-
-   The variable ```input``` is the path to the directory that holds the images you would like to augment
-   
-   The variable ```output``` is the path to the directory where the augmented images will be saved. The default location is set to ```results``` in the SensorEffectAugmentation directory.
-   
-   The variable ```code_location``` is the path to the directory where SensorEffectAugmentation is located
-
-   The other volume mappings are setting up the file system in the docker container. 
-   
-   The command ```python /root/main.py``` (line 15) runs the image augmentation pipeline. 
-	```bash
+* ``` main_aug.sh```
+*  
+	```
 	usage: main.py [-h] [-n [N]] [-b [BATCH_SIZE]] [-c [CHANNELS]] [-i INPUT]
 		       [-o [OUTPUT]] [--pattern [PATTERN]]
 		       [--image_height [IMAGE_HEIGHT]] [--image_width [IMAGE_WIDTH]]
