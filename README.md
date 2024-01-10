@@ -18,9 +18,7 @@ in the command line within the SensorEffectAugmentation folder.
 You can customize the type of augmentations, the dataset to augmented, etc by modifying the ``` main_aug.sh```, which is described in more detail below.
 
 The Sensor Effect Image Augmentation Pipeline is comprised of the following files:
-
-* ``` main_aug.sh```
-*  
+  
 	```
 	usage: main.py [-h] [-n [N]] [-b [BATCH_SIZE]] [-c [CHANNELS]] [-i INPUT]
 		       [-o [OUTPUT]] [--pattern [PATTERN]]
@@ -66,11 +64,11 @@ The Sensor Effect Image Augmentation Pipeline is comprised of the following file
 	```
 * ```main_aug.py```
 
-	This is a master function that handles input flags and initializing the augmentation. It is called by ```run_main_aug.sh```.
+	This is a master function that handles input flags and initializing the augmentation. 
 
 * ```model_aug.py```
 
-	This is a python module that defines the image augmentation class and builds the tensorflow graph. It is called by ```main_aug.py```. To alter the sensor effect parameter ranges, you will need to change the values in the ```generate_augmentation``` function, lines 123-200 in this file.
+	This is a python module that defines the image augmentation class. It is called by ```main_aug.py```. To alter the sensor effect parameter ranges, you will need to change the values in the ```generate_augmentation``` function, lines 123-200 in this file.
 
 * ```augmentationfunctions_tf.py```
 
