@@ -30,11 +30,6 @@ def main():
     ##
   if not os.path.exists(args.output):
     os.makedirs(args.output)
-    ##
-  # run_config = tf.ConfigProto()
-  ## allocate only as much GPU memory based on runtime allocations
-  # run_config.gpu_options.allow_growth=True
-  ##
 
   autoauggan = camGAN(
     image_width=args.image_width,

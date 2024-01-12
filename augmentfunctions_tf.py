@@ -11,7 +11,7 @@ import time
 from geometric_transformation_module import perform_aff_transformation
 from pix2pix_labtoRGBconv import *
 import pdb
-#
+
 #     
 # ---------------------------------------------------------------- #
 # lens distortion augmentation functions
@@ -172,20 +172,17 @@ def add_channel_noise(chan, a_sd, b_si, batchsize, im_h, im_w):
     #
     return clip_chan_noise
 
-def bilinear_interp_cfa(chan, cfa, cfa_kernel,batchsize, im_h, im_w):
-    #
-    # calculate pixel intensities based upon bayer CFA pattern
-    #
-    # location of pixel sensors for this color channel in the bayer array
-    pix_mask = tf.equal(cfa,tf.constant(1)) 
-    pix_is = chan
-    pix_not = tf.zeros_like(chan)
-    # get values of specific color channel sensors based upon the geometry/location of the cfa/bayer color sensors
-    pix_on_cfa = tf.where(pix_mask, pix_is, pix_not)
-    # use basic bilinear interpolation to solve for the noise that is in the non-pixel sensor locations
-    interp_pixs = tf.nn.conv2d(pix_on_cfa, cfa_kernel, strides=[1, 1, 1, 1], padding='SAME')
-    #
-    #pdb.set_trace()
+def bilinear_interp_cfa(chan, cfa, cfa_kernel, batchsize, im_h, im_w):
+    interp_pixs = []
+    for batch_iter in range(batchsize):
+        # Location of pixel sensors for this coloSr channel in the Bayer array
+        pix_mask= cfa[batch_iter] == 1
+        pix_is = chan[batch_iter]
+        pix_not = np.zeros_like(chan[batch_iter])
+        # Get values of specific color channel sensors based upon the geometry/location of the CFA/Bayer color sensors
+        pix_on_cfa = np.where(pix_mask, pix_is, pix_not)
+        # Use basic bilinear interpolation to solve for the noise that is in the non-pixel sensor locations
+        interp_pixs.append(cv2.filter2D(np.squeeze(pix_on_cfa), -1, np.squeeze(cfa_kernel)))
     return interp_pixs
 
 def return_bayer(bayer_type, im_h, im_w, batchsize):
